@@ -23,7 +23,7 @@ Players don't need an account. They open the link, type a name and the 4-letter 
 1. The host opens the link, types a name and taps **Host a new game**.
 2. The host taps **Share game link** and sends it. Friends tap it, type a name, and tap **Join game**. (They can also open the main link and type the code.)
 3. The host edits the task list if they want and taps **Start the game** (3+ players).
-4. Tap **Show** to see your target and pick one of two starting tasks. When your target does it, tap **Mission complete**.
+4. Tap **Show** to see your target and pick one of two starting tasks. Stuck on a task? Each player gets one **Reset task** for the whole night. When your target does it, tap **Mission complete**.
 5. Your target gets a pop-up and confirms. You get their target and task automatically.
 6. The game ends when one player is left, or when the host taps **End the game**.
 

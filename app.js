@@ -269,7 +269,7 @@ async function startGame(){
   const now = Date.now();
   await Promise.all(ids.map((id, i) => pRef(id).update({
     alive:true, kills:0, claim:null, killedBy:null, diedAt:null, removed:false,
-    targetId: ids[(i+1) % ids.length], task: null, taskOptions: options[i], assignedAt: now
+    targetId: ids[(i+1) % ids.length], task: null, taskOptions: options[i], assignedAt: now, resetsLeft: 1
   })));
   await gRef().update({ status:"live", tasks, startedAt:now, endedAt:null, endReason:null });
   S.ui.tasksDraft = null;
@@ -283,6 +283,19 @@ async function claimKill(){
 async function chooseTask(task){
   const me = myP(); if (!me || me.task || !(me.taskOptions||[]).includes(task)) return;
   await pRef(S.me).update({ task, taskOptions:null });
+}
+// One task reset per player for the whole night, on any contract.
+const canReset = me => me && me.alive && me.task && (me.resetsLeft||0) > 0;
+async function resetTask(){
+  const me = myP(); if (!canReset(me)) return;
+  const t = S.players[me.targetId];
+  if (t && t.claim && t.claim.by === S.me) throw "Take back your claim before resetting your task.";
+  const all = (S.game.tasks || []).filter(x => x !== me.task);
+  if (!all.length) throw "There are no other tasks to switch to.";
+  const inUse = new Set(alivePlayers().map(p => p.task));
+  const fresh = all.filter(x => !inUse.has(x));
+  const pool = fresh.length ? fresh : all;
+  await pRef(S.me).update({ task: pool[Math.floor(Math.random()*pool.length)], resetsLeft: 0 });
 }
 // A player who never picked passes on one of their two options at random.
 const taskOf = p => p.task || (p.taskOptions && p.taskOptions.length ? p.taskOptions[Math.floor(Math.random()*p.taskOptions.length)] : null);
@@ -507,7 +520,15 @@ function dossier(me){
         : h("div", {class:"stack"},
             h("div", {class:"row"},
               h("button", {class:"btn", onclick:() => { S.ui.reveal = !S.ui.reveal; render(); }}, S.ui.reveal ? "Hide" : "Show"),
-              h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete"))));
+              h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete")),
+            canReset(me) ? (S.ui.arm === "reset"
+              ? h("div", {class:"stack"},
+                  h("div", {class:"small"}, "Get a random new task for this target? You only get one reset all night."),
+                  h("div", {class:"row"},
+                    h("button", {class:"btn primary", disabled:S.ui.busy, onclick:() => { S.ui.arm=null; run(resetTask); }}, "Reset my task"),
+                    h("button", {class:"btn", onclick:() => { S.ui.arm=null; render(); }}, "Keep this one")))
+              : h("button", {class:"btn sm", onclick:() => { S.ui.arm="reset"; S.ui.reveal=true; render(); }}, "Reset task (1 left tonight)"))
+              : h("div", {class:"small", style:"opacity:.7"}, "Task reset used.")));
 }
 
 function deadCard(me){
