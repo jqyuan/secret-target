@@ -240,7 +240,7 @@ async function startGame(){
   const now = Date.now();
   await Promise.all(ids.map((id, i) => pRef(id).update({
     alive:true, kills:0, claim:null, killedBy:null, diedAt:null, removed:false,
-    targetId: ids[(i+1) % ids.length], task: assigned[i], assignedAt: now
+    targetId: ids[(i+1) % ids.length], task: assigned[i], assignedAt: now, swapsLeft: 1
   })));
   await gRef().update({ status:"live", tasks, startedAt:now, endedAt:null, endReason:null });
   S.ui.tasksDraft = null;
@@ -251,6 +251,18 @@ async function claimKill(){
   await pRef(me.targetId).update({ claim:{ by:S.me, at:Date.now() } });
   S.ui.confirmKill = false;
 }
+// One task swap per player, only on their starting contract.
+const canSwap = me => me && me.alive && (me.swapsLeft||0) > 0 && (me.kills||0) === 0;
+async function swapTask(){
+  const me = myP(); if (!canSwap(me)) return;
+  const all = (S.game.tasks || []).filter(t => t !== me.task);
+  if (!all.length) throw "There are no other tasks to swap to.";
+  const inUse = new Set(alivePlayers().map(p => p.task));
+  const fresh = all.filter(t => !inUse.has(t));
+  const pool = fresh.length ? fresh : all;
+  await pRef(S.me).update({ task: pool[Math.floor(Math.random()*pool.length)], swapsLeft: 0 });
+}
+
 async function cancelClaim(){
   const me = myP(); if (!me || !me.targetId) return;
   const t = S.players[me.targetId];
@@ -341,7 +353,7 @@ function feedPanel(){
 function hostPanel(){
   if (!isHost()) return null;
   const alive = alivePlayers().sort((a,b) => a.name.localeCompare(b.name));
-  return h("details", {class:"panel host"},
+  return h("details", {class:"panel host", open:!!S.ui.hostOpen, ontoggle:e => { S.ui.hostOpen = e.target.open; }},
     h("summary", null, "Host controls"),
     h("p", {class:"muted small", style:"margin:0"}, "Confirm a tag for someone whose phone died, or remove a player who went home. Whoever was after them takes over their target and task."),
     h("ul", {class:"players"}, alive.map(p =>
@@ -457,9 +469,17 @@ function dossier(me){
             h("div", {class:"row"},
               h("button", {class:"btn primary", disabled:S.ui.busy, onclick:() => run(claimKill)}, "Yes, claim it"),
               h("button", {class:"btn", onclick:() => { S.ui.confirmKill=false; render(); }}, "Not yet")))
-        : h("div", {class:"row"},
-            h("button", {class:"btn", onclick:() => { S.ui.reveal = !S.ui.reveal; render(); }}, S.ui.reveal ? "Hide" : "Show"),
-            h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete")));
+        : h("div", {class:"stack"},
+            h("div", {class:"row"},
+              h("button", {class:"btn", onclick:() => { S.ui.reveal = !S.ui.reveal; render(); }}, S.ui.reveal ? "Hide" : "Show"),
+              h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete")),
+            canSwap(me) ? (S.ui.arm === "swap"
+              ? h("div", {class:"stack"},
+                  h("div", {class:"small"}, "Swap for a random new task? You only get one swap, and only before your first tag."),
+                  h("div", {class:"row"},
+                    h("button", {class:"btn primary", disabled:S.ui.busy, onclick:() => { S.ui.arm=null; run(swapTask); }}, "Swap my task"),
+                    h("button", {class:"btn", onclick:() => { S.ui.arm=null; render(); }}, "Keep this one")))
+              : h("button", {class:"btn sm", onclick:() => { S.ui.arm="swap"; S.ui.reveal=true; render(); }}, "Swap task (1 left)")) : null));
 }
 
 function deadCard(me){
