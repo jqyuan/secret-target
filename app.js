@@ -72,7 +72,29 @@ const DEFAULT_TASKS = [
   "Get them to name a song from the year they were born",
   "Get them to read the ingredients on a food label",
   "Get them to explain how to tie a tie",
-  "Get them to show you their best dance move"
+  "Get them to show you their best dance move",
+  "Get them to name all the colors of the rainbow in order",
+  "Get them to count backwards from 20",
+  "Get them to name all seven dwarfs",
+  "Get them to name five states that start with the letter M",
+  "Get them to guess your age",
+  "Get them to guess how many people are at the party",
+  "Get them to tell you their battery percentage",
+  "Get them to tell you what their phone is named",
+  "Get them to show you their most recently used emoji",
+  "Get them to tell you how many unread texts they have",
+  "Get them to look up tomorrow's weather",
+  "Get them to recommend a show for you to watch",
+  "Get them to tell you the last movie they watched",
+  "Get them to tell you the first concert they went to",
+  "Get them to tell you their go-to karaoke song",
+  "Get them to tell you their dream car",
+  "Get them to say what three things they'd bring to a desert island",
+  "Get them to rate the food at the party out of ten",
+  "Get them to try a riddle you tell them",
+  "Get them to thumb wrestle you",
+  "Get them to snap with both hands",
+  "Get them to try on something you're wearing"
 ];
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 
