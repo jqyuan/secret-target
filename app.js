@@ -257,12 +257,19 @@ async function startGame(){
   if (!tasks.length) throw "Add at least one task.";
   const ids = shuffle(Object.keys(S.players));
   if (ids.length < 3) throw "You need at least 3 players to start.";
+  // Everyone gets two different starting tasks to choose between.
   let pool = [];
-  const assigned = ids.map(() => { if (!pool.length) pool = shuffle(tasks); return pool.pop(); });
+  const draw = avoid => {
+    if (!pool.length) pool = shuffle(tasks);
+    let i = pool.findIndex(t => t !== avoid);
+    if (i < 0){ pool = shuffle(tasks); i = Math.max(0, pool.findIndex(t => t !== avoid)); }
+    return pool.splice(i, 1)[0];
+  };
+  const options = ids.map(() => { const a = draw(null); const b = draw(a); return a === b ? [a] : [a, b]; });
   const now = Date.now();
   await Promise.all(ids.map((id, i) => pRef(id).update({
     alive:true, kills:0, claim:null, killedBy:null, diedAt:null, removed:false,
-    targetId: ids[(i+1) % ids.length], task: assigned[i], assignedAt: now, swapsLeft: 1
+    targetId: ids[(i+1) % ids.length], task: null, taskOptions: options[i], assignedAt: now
   })));
   await gRef().update({ status:"live", tasks, startedAt:now, endedAt:null, endReason:null });
   S.ui.tasksDraft = null;
@@ -273,17 +280,12 @@ async function claimKill(){
   await pRef(me.targetId).update({ claim:{ by:S.me, at:Date.now() } });
   S.ui.confirmKill = false;
 }
-// One task swap per player, only on their starting contract.
-const canSwap = me => me && me.alive && (me.swapsLeft||0) > 0 && (me.kills||0) === 0;
-async function swapTask(){
-  const me = myP(); if (!canSwap(me)) return;
-  const all = (S.game.tasks || []).filter(t => t !== me.task);
-  if (!all.length) throw "There are no other tasks to swap to.";
-  const inUse = new Set(alivePlayers().map(p => p.task));
-  const fresh = all.filter(t => !inUse.has(t));
-  const pool = fresh.length ? fresh : all;
-  await pRef(S.me).update({ task: pool[Math.floor(Math.random()*pool.length)], swapsLeft: 0 });
+async function chooseTask(task){
+  const me = myP(); if (!me || me.task || !(me.taskOptions||[]).includes(task)) return;
+  await pRef(S.me).update({ task, taskOptions:null });
 }
+// A player who never picked passes on one of their two options at random.
+const taskOf = p => p.task || (p.taskOptions && p.taskOptions.length ? p.taskOptions[Math.floor(Math.random()*p.taskOptions.length)] : null);
 
 async function cancelClaim(){
   const me = myP(); if (!me || !me.targetId) return;
@@ -298,7 +300,7 @@ async function confirmDeath(victimId){
   if (!k || !k.alive || k.targetId !== victimId){ await pRef(victimId).update({ claim:null }); return; }
   const usedTask = k.task, now = Date.now();
   const last = v.targetId === kId;
-  await pRef(kId).update({ targetId: last ? null : v.targetId, task: last ? null : v.task, kills:(k.kills||0)+1, assignedAt:now });
+  await pRef(kId).update({ targetId: last ? null : v.targetId, task: last ? null : taskOf(v), taskOptions:null, kills:(k.kills||0)+1, assignedAt:now });
   await pRef(victimId).update({ alive:false, claim:null, killedBy:kId, killTask:usedTask, diedAt:now, targetId:null, task:null });
   await S.db.collection(`games/${S.code}/feed`).add({ killer:kId, victim:victimId, task:usedTask||"", at:now });
   if (last) await gRef().update({ status:"ended", endedAt:now, endReason:"last" });
@@ -313,7 +315,7 @@ async function removePlayer(id){
   const remaining = alivePlayers().length - 1;
   if (hunter){
     const self = v.targetId === hunter.uid;
-    await pRef(hunter.uid).update({ targetId: self ? null : v.targetId, task: self ? null : v.task, assignedAt:now });
+    await pRef(hunter.uid).update({ targetId: self ? null : v.targetId, task: self ? null : taskOf(v), taskOptions:null, assignedAt:now });
   }
   await pRef(id).update({ alive:false, removed:true, claim:null, diedAt:now, targetId:null, task:null });
   await S.db.collection(`games/${S.code}/feed`).add({ victim:id, removed:true, at:now });
@@ -326,7 +328,7 @@ async function playAgain(){
   const fs = await S.db.collection(`games/${S.code}/feed`).get();
   for (const d of fs.docs) await S.db.doc(`games/${S.code}/feed/${d.id}`).delete();
   await Promise.all(Object.keys(S.players).map(id => pRef(id).update({
-    alive:true, kills:0, claim:null, killedBy:null, killTask:null, diedAt:null, removed:false, targetId:null, task:null
+    alive:true, kills:0, claim:null, killedBy:null, killTask:null, diedAt:null, removed:false, targetId:null, task:null, taskOptions:null
   })));
   await gRef().update({ status:"lobby", startedAt:null, endedAt:null, endReason:null });
 }
@@ -476,6 +478,17 @@ function dossier(me){
   const pending = t.claim && t.claim.by === S.me;
   const hidden = !S.ui.reveal && !pending;
   const fresh = me.assignedAt && Date.now() - me.assignedAt < 20000 && (me.kills||0) > 0;
+  if (!me.task && (me.taskOptions||[]).length) return h("div", {class:"dossier"},
+    h("div", {class:"head"}, h("span", null, "Your contract"), h("span", null, "Pick a task")),
+    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Target"), h("div", {class:"target" + (S.ui.reveal?"":" hidden-txt")}, S.ui.reveal ? t.name : "XXXXXX")),
+    S.ui.reveal
+      ? h("div", {class:"stack"},
+          h("div", {class:"k"}, "Choose your task. You can't change it later."),
+          me.taskOptions.map(opt => h("button", {class:"btn task-option", disabled:S.ui.busy, onclick:() => run(() => chooseTask(opt))}, opt)),
+          h("button", {class:"btn sm", onclick:() => { S.ui.reveal=false; render(); }}, "Hide"))
+      : h("div", {class:"stack"},
+          h("div", null, "Tap Show to see your target and pick one of two tasks."),
+          h("button", {class:"btn primary", onclick:() => { S.ui.reveal=true; render(); }}, "Show")));
   return h("div", {class:"dossier"},
     h("div", {class:"head"}, h("span", null, "Your contract"), h("span", null, "No. " + String((me.kills||0)+1).padStart(3,"0"))),
     fresh ? h("div", {class:"banner", style:"background:var(--paper-ink);color:var(--paper)"}, "New contract. You inherited this target and task.") : null,
@@ -494,14 +507,7 @@ function dossier(me){
         : h("div", {class:"stack"},
             h("div", {class:"row"},
               h("button", {class:"btn", onclick:() => { S.ui.reveal = !S.ui.reveal; render(); }}, S.ui.reveal ? "Hide" : "Show"),
-              h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete")),
-            canSwap(me) ? (S.ui.arm === "swap"
-              ? h("div", {class:"stack"},
-                  h("div", {class:"small"}, "Swap for a random new task? You only get one swap, and only before your first tag."),
-                  h("div", {class:"row"},
-                    h("button", {class:"btn primary", disabled:S.ui.busy, onclick:() => { S.ui.arm=null; run(swapTask); }}, "Swap my task"),
-                    h("button", {class:"btn", onclick:() => { S.ui.arm=null; render(); }}, "Keep this one")))
-              : h("button", {class:"btn sm", onclick:() => { S.ui.arm="swap"; S.ui.reveal=true; render(); }}, "Swap task (1 left)")) : null));
+              h("button", {class:"btn primary", onclick:() => { S.ui.confirmKill=true; S.ui.reveal=true; render(); }}, "Mission complete"))));
 }
 
 function deadCard(me){

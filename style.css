@@ -102,3 +102,5 @@ details.host[open] summary::after{content:"−"}
 .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
 .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
 .invite-link{font-family:var(--f-mono);font-size:13px;color:var(--fg);background:var(--ink);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all}
+.dossier .btn.task-option{text-align:left;font-weight:500;font-size:17px;line-height:1.35;white-space:normal;background:color-mix(in srgb,var(--paper) 70%,#fff);border-width:2px}
+.dossier .btn.task-option:hover{background:var(--paper-ink);color:var(--paper)}
