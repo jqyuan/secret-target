@@ -440,7 +440,7 @@ function homeView(){
     h("div", {class:"panel"},
       h("h2", {style:"font-family:var(--f-display);font-size:34px;text-transform:uppercase;line-height:1"}, "Everyone gets a target. Everyone is one."),
       h("ol", {class:"howto"},
-        h("li", null, "Each player gets a secret target and a task."),
+        h("li", null, "Each player gets a secret target and a secret task."),
         h("li", null, "Get your target to do the task without them catching on."),
         h("li", null, "Claim it. They confirm on their phone."),
         h("li", null, "You take over their target and task. Most tags wins."))),
