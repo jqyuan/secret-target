@@ -363,28 +363,40 @@ function topBar(){
 }
 const errBox = () => S.ui.err ? h("div", {class:"err", role:"alert"}, S.ui.err) : null;
 
+// While the game is live, who tagged whom (and tag counts) stay secret. Everything is revealed at the end.
+const revealed = () => S.game && S.game.status === "ended";
+
 function leaderboard(){
-  const ps = Object.values(S.players).sort((a,b) => (b.kills||0)-(a.kills||0) || (b.alive?1:0)-(a.alive?1:0) || a.name.localeCompare(b.name));
+  const open = revealed();
+  const ps = Object.values(S.players).sort(open
+    ? (a,b) => (b.kills||0)-(a.kills||0) || (b.alive?1:0)-(a.alive?1:0) || a.name.localeCompare(b.name)
+    : (a,b) => (b.alive?1:0)-(a.alive?1:0) || a.name.localeCompare(b.name));
   return h("div", {class:"panel"},
-    h("div", {class:"label"}, "Leaderboard"),
+    h("div", {class:"label"}, open ? "Final leaderboard" : "Players"),
+    open ? null : h("div", {class:"muted small"}, "Tag counts stay secret until the game ends."),
     h("ul", {class:"players"}, ps.map((p,i) =>
       h("li", {class:(p.uid===S.me?"me ":"") + (p.alive?"":"dead")},
-        h("span", {class:"rank"}, i+1),
+        open ? h("span", {class:"rank"}, i+1) : null,
         h("span", {class:"nm"}, p.name, p.uid===S.me ? h("span", {class:"muted small"}, " (you)") : null),
         h("span", {class:"tag " + (p.alive?"alive":"out")}, p.alive ? "Alive" : (p.removed ? "Left" : "Out")),
-        h("span", {class:"kills", title:"Tags"}, (p.kills||0) + " tagged")))));
+        open ? h("span", {class:"kills", title:"Tags"}, (p.kills||0) + " tagged") : null))));
 }
 
 function feedPanel(){
   if (!S.feed.length) return null;
+  const open = revealed();
   return h("div", {class:"panel"},
-    h("div", {class:"label"}, "Activity"),
+    h("div", {class:"label"}, open ? "How it went down" : "Activity"),
     h("ul", {class:"feed"}, S.feed.map(f => f.removed
       ? h("li", {class:"rm"}, h("div", null, nameOf(f.victim), " left the game"), h("div", {class:"when"}, ago(f.at)))
-      : h("li", null,
-          h("div", null, h("b", null, nameOf(f.killer)), " eliminated ", h("b", null, nameOf(f.victim))),
-          f.task ? h("div", {class:"muted small"}, f.task) : null,
-          h("div", {class:"when"}, ago(f.at))))));
+      : open
+        ? h("li", null,
+            h("div", null, h("b", null, nameOf(f.killer)), " eliminated ", h("b", null, nameOf(f.victim))),
+            f.task ? h("div", {class:"muted small"}, f.task) : null,
+            h("div", {class:"when"}, ago(f.at)))
+        : h("li", null,
+            h("div", null, h("b", null, nameOf(f.victim)), " was eliminated"),
+            h("div", {class:"when"}, ago(f.at))))));
 }
 
 function hostPanel(){

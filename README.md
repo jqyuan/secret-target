@@ -25,7 +25,7 @@ Players don't need an account. They open the link, type a name and the 4-letter 
 3. The host edits the task list if they want and taps **Start the game** (3+ players).
 4. Tap **Show** to see your target and pick one of two starting tasks. Stuck on a task? Each player gets one **Reset task** for the whole night. When your target does it, tap **Mission complete**.
 5. Your target gets a pop-up and confirms. You get their target and task automatically.
-6. The game ends when one player is left, or when the host taps **End the game**.
+6. During the game everyone sees who has been eliminated, but not who tagged them or how many tags anyone has. The game ends when one player is left, or when the host taps **End the game**. Then the final screen reveals every tag and the winner.
 
 ## Notes
 - Each phone remembers its player through the browser. If someone switches browsers or clears their data mid-game, the host can remove them from **Host controls**.
