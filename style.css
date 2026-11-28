@@ -92,9 +92,9 @@ li.dead .nm{color:var(--muted);text-decoration:line-through;text-decoration-colo
 .overlay h2{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1;text-transform:uppercase;color:var(--blood)}
 .quote{background:var(--ink);border-radius:8px;padding:12px 14px;font-size:18px}
 
-details.host summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
-details.host summary::after{content:"+";font-family:var(--f-mono);color:var(--muted)}
-details.host[open] summary::after{content:"−"}
+details.fold summary,details.host summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.fold summary::after,details.host summary::after{content:"+";font-family:var(--f-mono);color:var(--muted)}
+details.fold[open] summary::after,details.host[open] summary::after{content:"−"}
 
 .winner{text-align:center;display:flex;flex-direction:column;gap:6px;padding:8px 0}
 .winner .nm{font-family:var(--f-display);font-weight:900;font-size:clamp(44px,14vw,72px);line-height:.95;text-transform:uppercase;color:var(--brass);overflow-wrap:anywhere}
@@ -104,3 +104,7 @@ details.host[open] summary::after{content:"−"}
 .invite-link{font-family:var(--f-mono);font-size:13px;color:var(--fg);background:var(--ink);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;user-select:all;-webkit-user-select:all}
 .dossier .btn.task-option{text-align:left;font-weight:500;font-size:17px;line-height:1.35;white-space:normal;background:color-mix(in srgb,var(--paper) 70%,#fff);border-width:2px}
 .dossier .btn.task-option:hover{background:var(--paper-ink);color:var(--paper)}
+.dossier .next{border-left:3px solid var(--paper-ink);padding:6px 10px;font-size:14px;line-height:1.4;background:color-mix(in srgb,var(--paper-ink) 7%,transparent)}
+.dossier .next b{font-weight:700}
+details.fold .howto{color:inherit;margin-top:10px}
+details.fold .howto b{color:var(--brass)}

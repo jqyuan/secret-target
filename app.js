@@ -494,6 +494,7 @@ function lobbyView(){
       h("div", null, "Waiting for ", h("b", null, nameOf(g.hostId)), " to start the game."),
       h("div", {class:"muted small"}, `${(g.tasks||[]).length} tasks in the pool. Your target and task will appear here when it starts.`),
       errBox()) : null,
+    rulesPanel(),
     h("button", {class:"btn ghost", onclick:() => run(leaveLobby)}, host ? "Back to start" : "Leave game")];
 }
 
@@ -508,24 +509,27 @@ function dossier(me){
     h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Target"), h("div", {class:"target" + (S.ui.reveal?"":" hidden-txt")}, S.ui.reveal ? t.name : "XXXXXX")),
     S.ui.reveal
       ? h("div", {class:"stack"},
-          h("div", {class:"k"}, "Choose your task. You can't change it later."),
+          h("div", {class:"next"}, h("b", null, "Step 1: "), "Pick the task you think you can get ", h("b", null, t.name), " to do without them noticing. You can't switch later, except with your one reset."),
           me.taskOptions.map(opt => h("button", {class:"btn task-option", disabled:S.ui.busy, onclick:() => run(() => chooseTask(opt))}, opt)),
           h("button", {class:"btn sm", onclick:() => { S.ui.reveal=false; render(); }}, "Hide"))
       : h("div", {class:"stack"},
-          h("div", null, "Tap Show to see your target and pick one of two tasks."),
+          h("div", {class:"next"}, h("b", null, "The game has started. "), "Make sure no one can see your screen, then tap Show to see who your target is and pick one of two tasks."),
           h("button", {class:"btn primary", onclick:() => { S.ui.reveal=true; render(); }}, "Show")));
   return h("div", {class:"dossier"},
     h("div", {class:"head"}, h("span", null, "Your contract"), h("span", null, "No. " + String((me.kills||0)+1).padStart(3,"0"))),
     fresh ? h("div", {class:"banner", style:"background:var(--paper-ink);color:var(--paper)"}, "New contract. You inherited this target and task.") : null,
     h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Target"), h("div", {class:"target" + (hidden?" hidden-txt":"")}, hidden ? "XXXXXX" : t.name)),
     h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Task"), h("div", {class:"task" + (hidden?" hidden-txt":"")}, hidden ? "Hidden until you tap show" : me.task)),
+    pending ? null : S.ui.confirmKill ? null : h("div", {class:"next"}, hidden
+      ? ["Tap ", h("b", null, "Show"), " to see your target and task. Keep your screen hidden from others."]
+      : ["Get ", h("b", null, t.name), " to do this without them catching on. As soon as they do it, tap ", h("b", null, "Mission complete"), ". They confirm on their phone and you get their target next."]),
     pending
       ? h("div", {class:"stack"},
-          h("div", null, "Waiting for ", h("b", null, t.name), " to confirm on their phone…"),
+          h("div", {class:"next"}, "Waiting for ", h("b", null, t.name), " to confirm on their phone. If they don't see it, tell them quietly to open the app."),
           h("button", {class:"btn sm", disabled:S.ui.busy, onclick:() => run(cancelClaim)}, "Take back the claim"))
       : S.ui.confirmKill
         ? h("div", {class:"stack"},
-            h("div", null, "Did ", h("b", null, t.name), " just do it?"),
+            h("div", {class:"next"}, "Did ", h("b", null, t.name), " actually do it? Only claim it if they did. Their phone will ask them to confirm."),
             h("div", {class:"row"},
               h("button", {class:"btn primary", disabled:S.ui.busy, onclick:() => run(claimKill)}, "Yes, claim it"),
               h("button", {class:"btn", onclick:() => { S.ui.confirmKill=false; render(); }}, "Not yet")))
@@ -550,7 +554,22 @@ function deadCard(me){
     h("div", {class:"target", style:"padding-right:120px"}, me.name),
     me.removed ? h("div", null, "You're out of this round.")
       : h("div", {class:"task"}, "Eliminated by ", h("b", null, nameOf(me.killedBy)), me.killTask ? [" with: ", h("i", null, me.killTask)] : null),
-    h("div", {class:"small"}, `You finished with ${me.kills||0} tag${(me.kills||0)===1?"":"s"}. Keep watching the board.`));
+    h("div", {class:"small"}, `You finished with ${me.kills||0} tag${(me.kills||0)===1?"":"s"}.`),
+    h("div", {class:"next"}, h("b", null, "You're out. "), "Keep it secret who got you and what the task was. Results are revealed when the game ends."));
+}
+
+function rulesPanel(){
+  return h("details", {class:"panel fold", open:!!S.ui.rulesOpen, ontoggle:e => { S.ui.rulesOpen = e.target.open; }},
+    h("summary", null, "How to play"),
+    h("ol", {class:"howto"},
+      h("li", null, "You have a secret ", h("b", null, "target"), " (another player) and a ", h("b", null, "task"), ". Don't show anyone your screen."),
+      h("li", null, "Get your target to do the task without them realizing it's your mission. Be sneaky."),
+      h("li", null, "When they do it, tap ", h("b", null, "Mission complete"), ". Their phone asks them to confirm."),
+      h("li", null, "Once they confirm, they're eliminated. You take over ", h("b", null, "their"), " target and task."),
+      h("li", null, "Stuck? You get ", h("b", null, "one task reset"), " for the whole night."),
+      h("li", null, "Keep tags secret. Everyone only sees who's out, not who got them."),
+      h("li", null, "If someone asks you to do something oddly specific, they might be after you. Refusing everything is no fun, though."),
+      h("li", null, "Game ends when one player is left or the host ends it. ", h("b", null, "Most tags wins."))));
 }
 
 function claimOverlay(me){
@@ -576,7 +595,7 @@ function liveView(){
       h("div", {class:"stat"}, h("b", null, me ? (me.kills||0) : "–"), h("span", null, "Your tags")),
       h("div", {class:"stat"}, h("b", null, alive), h("span", null, "Alive")),
       h("div", {class:"stat"}, h("b", null, total - alive), h("span", null, "Out"))),
-    leaderboard(), feedPanel(), hostPanel(),
+    rulesPanel(), leaderboard(), feedPanel(), hostPanel(),
     me && me.alive && me.claim ? claimOverlay(me) : null];
 }
 
