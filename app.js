@@ -506,7 +506,7 @@ function dossier(me){
   const fresh = me.assignedAt && Date.now() - me.assignedAt < 20000 && (me.kills||0) > 0;
   if (!me.task && (me.taskOptions||[]).length) return h("div", {class:"dossier"},
     h("div", {class:"head"}, h("span", null, "Your contract"), h("span", null, "Pick a task")),
-    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Target"), h("div", {class:"target" + (S.ui.reveal?"":" hidden-txt")}, S.ui.reveal ? t.name : "XXXXXX")),
+    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Secret target"), h("div", {class:"target" + (S.ui.reveal?"":" hidden-txt")}, S.ui.reveal ? t.name : "XXXXXX")),
     S.ui.reveal
       ? h("div", {class:"stack"},
           h("div", {class:"next"}, h("b", null, "Step 1: "), "Pick the task you think you can get ", h("b", null, t.name), " to do without them noticing. You can't switch later, except with your one reset."),
@@ -518,8 +518,8 @@ function dossier(me){
   return h("div", {class:"dossier"},
     h("div", {class:"head"}, h("span", null, "Your contract"), h("span", null, "No. " + String((me.kills||0)+1).padStart(3,"0"))),
     fresh ? h("div", {class:"banner", style:"background:var(--paper-ink);color:var(--paper)"}, "New contract. You inherited this target and task.") : null,
-    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Target"), h("div", {class:"target" + (hidden?" hidden-txt":"")}, hidden ? "XXXXXX" : t.name)),
-    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Task"), h("div", {class:"task" + (hidden?" hidden-txt":"")}, hidden ? "Hidden until you tap show" : me.task)),
+    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Secret target"), h("div", {class:"target" + (hidden?" hidden-txt":"")}, hidden ? "XXXXXX" : t.name)),
+    h("div", {class:"stack", style:"gap:4px"}, h("div", {class:"k"}, "Secret task"), h("div", {class:"task" + (hidden?" hidden-txt":"")}, hidden ? "Hidden until you tap show" : me.task)),
     pending ? null : S.ui.confirmKill ? null : h("div", {class:"next"}, hidden
       ? ["Tap ", h("b", null, "Show"), " to see your target and task. Keep your screen hidden from others."]
       : ["Get ", h("b", null, t.name), " to do this without them catching on. As soon as they do it, tap ", h("b", null, "Mission complete"), ". They confirm on their phone and you get their target next."]),
@@ -562,7 +562,7 @@ function rulesPanel(){
   return h("details", {class:"panel fold", open:!!S.ui.rulesOpen, ontoggle:e => { S.ui.rulesOpen = e.target.open; }},
     h("summary", null, "How to play"),
     h("ol", {class:"howto"},
-      h("li", null, "You have a secret ", h("b", null, "target"), " (another player) and a ", h("b", null, "task"), ". Don't show anyone your screen."),
+      h("li", null, "You have a ", h("b", null, "secret target"), " (another player) and a ", h("b", null, "secret task"), ". Don't show anyone your screen."),
       h("li", null, "Get your target to do the task without them realizing it's your mission. Be sneaky."),
       h("li", null, "When they do it, tap ", h("b", null, "Mission complete"), ". Their phone asks them to confirm."),
       h("li", null, "Once they confirm, they're eliminated. You take over ", h("b", null, "their"), " target and task."),
